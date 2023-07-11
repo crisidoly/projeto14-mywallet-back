@@ -1,7 +1,8 @@
 import bcrypt from "bcrypt";
 import { v4 as uid } from "uuid";
 import dotenv from "dotenv";
-import connectToDatabase from "../database/database.connection.js";
+import conexaoDatabase from "../database/database.connection.js";
+import { db } from "../database/database.connection.js";
 
 dotenv.config();
 
@@ -10,7 +11,7 @@ export async function register(req, res) {
   console.log({ name, email, password });
 
   try {
-    const db = await connectToDatabase();
+    const db = await conexaoDatabase();
 
     const emailExiste = await db.collection("users").findOne({ email });
     if (emailExiste) return res.status(409).send("E-mail já cadastrado");
@@ -27,10 +28,10 @@ export async function register(req, res) {
 export async function login(req, res) {
   const { email, password } = req.body;
   try {
-    const db = await connectToDatabase();
+    const db = await conexaoDatabase();
 
     const user = await db.collection("users").findOne({ email });
-    if (!user) return res.status(401).send("E-mail não cadastrado!");
+    if (!user) return res.status(404).send("E-mail não cadastrado!");
 
     const senhaCorreta = bcrypt.compareSync(password, user.password);
     if (!senhaCorreta) return res.status(401).send("Senha incorreta!");
@@ -45,20 +46,14 @@ export async function login(req, res) {
 }
 
 export async function logout(req, res) {
-  const { authorization } = req.headers;
-  const token = authorization?.replace("Bearer ", "")
-  if (!token) return res.sendStatus(401)
+  const { token } = res.locals.session;
 
   try {
-    const sessions = await db.collection("sessions").findOne({ token })
-      if (!sessions) return res.sendStatus(401)
+    const db = await conexaoDatabase();
 
-      await db.collection("sessions").deletOne({ token })
-      
-
-  } catch(err){  
-    res.sendStatus(500).send(err.message)
-
+    await db.collection("sessions").deleteOne({ token });
+    res.sendStatus(200);
+  } catch (err) {
+    res.status(500).send(err.message);
   }
-  
 }

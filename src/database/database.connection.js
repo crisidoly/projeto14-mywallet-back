@@ -5,16 +5,15 @@ dotenv.config();
 
 const client = new MongoClient(process.env.DATABASE_URL);
 
-export default async function connectToDatabase() {
+export default async function conexaoDatabase() {
   try {
     await client.connect();
-    console.log("Conectado a database");
-    const db = client.db();
-    return db;
+    console.log("Conectado ao banco de dados");
+    return client.db();
   } catch (error) {
     console.log(error);
-    throw new Error("Falha ao conectar na database");
+    throw new Error("Falha ao conectar ao banco de dados");
   }
 }
 
-
+export const db = client.db();
